@@ -18,6 +18,8 @@ export interface FetchReviewsRequest {
 
 export type FetchReviewsResponse = ApiResponse<{
   reviews: Review[];
+  message: string;
+  source: "database" | "google";
 }>;
 
 export type DatabaseReviewsResponse = ApiResponse<{

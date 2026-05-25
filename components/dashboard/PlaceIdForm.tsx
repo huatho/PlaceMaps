@@ -25,14 +25,26 @@ export function PlaceIdForm({ placeId, isLoading, error, onPlaceIdChange, onSubm
         <label className="sr-only" htmlFor="place-id">
           Google Place ID
         </label>
-        <Input
-          id="place-id"
-          value={placeId}
-          onChange={(event) => onPlaceIdChange(event.target.value)}
-          placeholder="Enter Google Place ID..."
-          className="flex-1"
-          disabled={isLoading}
-        />
+        <div className="relative flex-1">
+          <Input
+            id="place-id"
+            value={placeId}
+            onChange={(event) => onPlaceIdChange(event.target.value)}
+            placeholder="Enter Google Place ID..."
+            className="w-full pr-10"
+            disabled={isLoading}
+          />
+          {placeId && !isLoading ? (
+            <button
+              type="button"
+              aria-label="Clear Google Place ID"
+              onClick={() => onPlaceIdChange("")}
+              className="absolute right-2 top-1/2 flex size-7 -translate-y-1/2 items-center justify-center rounded-full text-lg leading-none text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-300"
+            >
+              &times;
+            </button>
+          ) : null}
+        </div>
         <Button type="submit" disabled={isLoading}>
           {isLoading ? "Fetching..." : "Fetch Reviews"}
         </Button>

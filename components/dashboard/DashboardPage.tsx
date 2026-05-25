@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { PlaceIdForm } from "@/components/dashboard/PlaceIdForm";
 import { ReviewCard } from "@/components/dashboard/ReviewCard";
 import { StatsCards } from "@/components/dashboard/StatsCards";
+import { Button } from "@/components/ui/Button";
 import { API_ERROR_MESSAGES, APP_CONFIG } from "@/constants";
 import type {
   ApproveReviewRequest,
@@ -14,6 +15,8 @@ import type {
   GenerateAiResponse
 } from "@/types/api";
 import type { Review, SuggestionTone } from "@/types/review";
+
+const DATABASE_REVIEWS_PER_PAGE = 10;
 
 export function DashboardPage() {
   const [placeId, setPlaceId] = useState("");
@@ -26,6 +29,7 @@ export function DashboardPage() {
   const [generatingReviewId, setGeneratingReviewId] = useState<string | null>(null);
   const [selectedTones, setSelectedTones] = useState<Record<string, SuggestionTone>>({});
   const [successMessage, setSuccessMessage] = useState("");
+  const [databaseReviewsPage, setDatabaseReviewsPage] = useState(1);
 
   const hasReviews = reviews.length > 0;
   const hasDatabaseReviews = databaseReviews.length > 0;
@@ -45,6 +49,14 @@ export function DashboardPage() {
   const sortedDatabaseReviews = useMemo(
     () =>
       [...databaseReviews].sort((a, b) => {
+        const placeA = (a.placeName || a.placeAddress || a.placeId || "").toLocaleLowerCase();
+        const placeB = (b.placeName || b.placeAddress || b.placeId || "").toLocaleLowerCase();
+        const placeCompare = placeA.localeCompare(placeB);
+
+        if (placeCompare !== 0) {
+          return placeCompare;
+        }
+
         if (a.status !== b.status) {
           return a.status === "Pending" ? -1 : 1;
         }
@@ -53,6 +65,24 @@ export function DashboardPage() {
       }),
     [databaseReviews]
   );
+
+  const databaseReviewsTotalPages = Math.max(1, Math.ceil(sortedDatabaseReviews.length / DATABASE_REVIEWS_PER_PAGE));
+  const paginatedDatabaseReviews = useMemo(
+    () =>
+      sortedDatabaseReviews.slice(
+        (databaseReviewsPage - 1) * DATABASE_REVIEWS_PER_PAGE,
+        databaseReviewsPage * DATABASE_REVIEWS_PER_PAGE
+      ),
+    [databaseReviewsPage, sortedDatabaseReviews]
+  );
+  const firstDatabaseReviewNumber = hasDatabaseReviews
+    ? (databaseReviewsPage - 1) * DATABASE_REVIEWS_PER_PAGE + 1
+    : 0;
+  const lastDatabaseReviewNumber = Math.min(databaseReviewsPage * DATABASE_REVIEWS_PER_PAGE, sortedDatabaseReviews.length);
+
+  useEffect(() => {
+    setDatabaseReviewsPage((currentPage) => Math.min(currentPage, databaseReviewsTotalPages));
+  }, [databaseReviewsTotalPages]);
 
   const loadDatabaseReviews = useCallback(async () => {
     setDatabaseError("");
@@ -70,6 +100,7 @@ export function DashboardPage() {
       }
 
       setDatabaseReviews(payload.data.reviews);
+      setDatabaseReviewsPage(1);
     } catch (error) {
       setDatabaseError(error instanceof Error ? error.message : "Unable to load database reviews.");
     } finally {
@@ -116,6 +147,7 @@ export function DashboardPage() {
 
       setReviews(payload.data.reviews);
       setSelectedTones({});
+      setSuccessMessage(payload.data.message);
       await loadDatabaseReviews();
     } catch (error) {
       setReviews([]);
@@ -281,7 +313,7 @@ export function DashboardPage() {
             </div>
           ) : (
             <div className="space-y-4">
-              {sortedDatabaseReviews.map((review) => (
+              {paginatedDatabaseReviews.map((review) => (
                 <ReviewCard
                   key={review.id}
                   review={review}
@@ -292,6 +324,38 @@ export function DashboardPage() {
                   onApprove={handleApprove}
                 />
               ))}
+              {databaseReviewsTotalPages > 1 ? (
+                <div className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-sm text-slate-500">
+                    Showing {firstDatabaseReviewNumber}-{lastDatabaseReviewNumber} of {sortedDatabaseReviews.length}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={() => setDatabaseReviewsPage((currentPage) => Math.max(1, currentPage - 1))}
+                      disabled={databaseReviewsPage === 1}
+                    >
+                      Previous
+                    </Button>
+                    <span className="min-w-20 text-center text-sm font-semibold text-slate-700">
+                      {databaseReviewsPage} / {databaseReviewsTotalPages}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={() =>
+                        setDatabaseReviewsPage((currentPage) =>
+                          Math.min(databaseReviewsTotalPages, currentPage + 1)
+                        )
+                      }
+                      disabled={databaseReviewsPage === databaseReviewsTotalPages}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
+              ) : null}
             </div>
           )}
         </section>
