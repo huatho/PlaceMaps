@@ -18,6 +18,7 @@ export function Button({ className, variant = "primary", type = "button", ...pro
       type={type}
       className={cn(
         "inline-flex min-h-10 items-center justify-center rounded-md px-4 text-sm font-semibold transition disabled:cursor-not-allowed",
+        "whitespace-nowrap",
         variantClasses[variant],
         className
       )}

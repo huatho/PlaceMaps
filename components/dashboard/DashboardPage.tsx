@@ -228,19 +228,19 @@ export function DashboardPage() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-6xl space-y-6">
+    <main className="min-h-screen overflow-x-hidden bg-slate-50 px-3 py-5 sm:px-6 sm:py-8 lg:px-8">
+      <div className="mx-auto max-w-6xl space-y-5 sm:space-y-6">
         <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
+          <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-3">
-              <h1 className="text-3xl font-bold tracking-normal text-slate-950 sm:text-4xl">
+              <h1 className="text-2xl font-bold tracking-normal text-slate-950 sm:text-4xl">
                 {APP_CONFIG.name}
               </h1>
               <span className="rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-bold uppercase tracking-normal text-slate-600">
                 {APP_CONFIG.badge}
               </span>
             </div>
-            <p className="mt-2 text-base text-slate-600">{APP_CONFIG.subtitle}</p>
+            <p className="mt-2 text-sm text-slate-600 sm:text-base">{APP_CONFIG.subtitle}</p>
           </div>
         </header>
 
@@ -261,7 +261,7 @@ export function DashboardPage() {
         ) : null}
 
         <section className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
             <h2 className="text-lg font-semibold text-slate-950">Reviews</h2>
             {hasReviews ? <p className="text-sm text-slate-500">{reviews.length} loaded from Google Places</p> : null}
           </div>
@@ -289,7 +289,7 @@ export function DashboardPage() {
         </section>
 
         <section className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
             <h2 className="text-lg font-semibold text-slate-950">Database Reviews</h2>
             {hasDatabaseReviews ? (
               <p className="text-sm text-slate-500">{databaseReviews.length} reviews in database</p>
@@ -329,12 +329,13 @@ export function DashboardPage() {
                   <p className="text-sm text-slate-500">
                     Showing {firstDatabaseReviewNumber}-{lastDatabaseReviewNumber} of {sortedDatabaseReviews.length}
                   </p>
-                  <div className="flex items-center gap-2">
+                  <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:flex">
                     <Button
                       type="button"
                       variant="secondary"
                       onClick={() => setDatabaseReviewsPage((currentPage) => Math.max(1, currentPage - 1))}
                       disabled={databaseReviewsPage === 1}
+                      className="w-full sm:w-auto"
                     >
                       Previous
                     </Button>
@@ -350,6 +351,7 @@ export function DashboardPage() {
                         )
                       }
                       disabled={databaseReviewsPage === databaseReviewsTotalPages}
+                      className="w-full sm:w-auto"
                     >
                       Next
                     </Button>

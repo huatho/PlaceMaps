@@ -28,14 +28,14 @@ export function AiSuggestionPanel({
 
   return (
     <div className="mt-5 border-t border-slate-200 pt-5">
-      <div className="grid items-stretch gap-4 md:grid-cols-3">
+      <div className="grid items-stretch gap-3 md:grid-cols-3 md:gap-4">
         {tones.map((tone) => {
           const selected = selectedTone === tone;
 
           return (
             <label
               key={tone}
-              className={`flex min-h-44 cursor-pointer flex-col rounded-lg border p-5 text-left transition ${
+              className={`flex min-h-36 cursor-pointer flex-col rounded-lg border p-4 text-left transition sm:min-h-44 sm:p-5 ${
                 selected
                   ? "border-slate-900 bg-slate-50 ring-2 ring-slate-200"
                   : "border-slate-200 bg-white hover:border-slate-400 hover:bg-slate-50"
@@ -59,19 +59,22 @@ export function AiSuggestionPanel({
                 >
                   {selected ? <span className="size-2 rounded-full bg-white" /> : null}
                 </span>
-                <span className="text-base font-semibold leading-6 text-slate-950">{suggestionLabels[tone]}</span>
+                <span className="text-sm font-semibold leading-6 text-slate-950 sm:text-base">
+                  {suggestionLabels[tone]}
+                </span>
               </div>
-              <p className="mt-4 text-sm leading-6 text-slate-700">{suggestions[tone]}</p>
+              <p className="mt-3 break-words text-sm leading-6 text-slate-700 sm:mt-4">{suggestions[tone]}</p>
             </label>
           );
         })}
       </div>
-      <div className="mt-5 flex justify-end border-t border-slate-100 pt-4">
+      <div className="mt-5 flex justify-stretch border-t border-slate-100 pt-4 sm:justify-end">
         <Button
           type="button"
           variant="success"
           onClick={onApprove}
           disabled={!selectedTone || isApproved}
+          className="w-full sm:w-auto"
         >
           Approve
         </Button>

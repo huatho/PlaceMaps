@@ -13,11 +13,11 @@ export function StatsCards({ reviews }: StatsCardsProps) {
   ];
 
   return (
-    <section className="grid gap-4 sm:grid-cols-3">
+    <section className="grid gap-3 sm:grid-cols-3 sm:gap-4">
       {stats.map((stat) => (
-        <Card key={stat.label} className="p-4">
+        <Card key={stat.label} className="p-4 sm:p-5">
           <p className="text-sm font-medium text-slate-500">{stat.label}</p>
-          <p className="mt-2 text-3xl font-bold tracking-normal text-slate-950">{stat.value}</p>
+          <p className="mt-2 text-2xl font-bold tracking-normal text-slate-950 sm:text-3xl">{stat.value}</p>
         </Card>
       ))}
     </section>

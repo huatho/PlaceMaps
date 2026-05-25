@@ -21,7 +21,7 @@ export function PlaceIdForm({ placeId, isLoading, error, onPlaceIdChange, onSubm
 
   return (
     <Card as="form" onSubmit={handleSubmit} className="p-4 sm:p-5">
-      <div className="flex flex-col gap-3 md:flex-row">
+      <div className="flex flex-col gap-3 sm:flex-row">
         <label className="sr-only" htmlFor="place-id">
           Google Place ID
         </label>
@@ -45,7 +45,7 @@ export function PlaceIdForm({ placeId, isLoading, error, onPlaceIdChange, onSubm
             </button>
           ) : null}
         </div>
-        <Button type="submit" disabled={isLoading}>
+        <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
           {isLoading ? "Fetching..." : "Fetch Reviews"}
         </Button>
       </div>

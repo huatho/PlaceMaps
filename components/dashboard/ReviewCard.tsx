@@ -28,16 +28,16 @@ export function ReviewCard({
   const isResolved = review.status === "Resolved";
 
   return (
-    <Card as="article" className="p-5">
+    <Card as="article" className="p-4 sm:p-5">
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-        <div>
+        <div className="min-w-0 flex-1">
           {review.placeName || review.placeAddress ? (
             <div className="mb-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
               {review.placeName ? (
-                <p className="text-sm font-semibold leading-5 text-slate-950">{review.placeName}</p>
+                <p className="break-words text-sm font-semibold leading-5 text-slate-950">{review.placeName}</p>
               ) : null}
               {review.placeAddress ? (
-                <p className="mt-0.5 text-xs leading-5 text-slate-500">{review.placeAddress}</p>
+                <p className="mt-0.5 break-words text-xs leading-5 text-slate-500">{review.placeAddress}</p>
               ) : null}
             </div>
           ) : null}
@@ -61,12 +61,13 @@ export function ReviewCard({
           variant="secondary"
           onClick={() => onGenerate(review.id)}
           disabled={isGenerating || isResolved}
+          className="w-full md:w-auto"
         >
           {isGenerating ? "Generating..." : "Generate AI"}
         </Button>
       </div>
 
-      <p className="mt-4 text-sm leading-6 text-slate-700">{review.content}</p>
+      <p className="mt-4 break-words text-sm leading-6 text-slate-700">{review.content}</p>
 
       {isGenerating ? (
         <div className="mt-5 flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm font-medium text-slate-600">
@@ -88,7 +89,7 @@ export function ReviewCard({
       {review.selectedReply ? (
         <div className="mt-5 rounded-lg border border-emerald-200 bg-emerald-50 p-4">
           <p className="text-xs font-bold uppercase tracking-normal text-emerald-700">Approved Reply</p>
-          <p className="mt-2 text-sm leading-6 text-emerald-950">{review.selectedReply}</p>
+          <p className="mt-2 break-words text-sm leading-6 text-emerald-950">{review.selectedReply}</p>
         </div>
       ) : null}
     </Card>
