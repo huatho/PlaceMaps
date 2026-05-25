@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { PlaceIdForm } from "@/components/dashboard/PlaceIdForm";
 import { ReviewCard } from "@/components/dashboard/ReviewCard";
 import { StatsCards } from "@/components/dashboard/StatsCards";
@@ -8,6 +8,7 @@ import { API_ERROR_MESSAGES, APP_CONFIG } from "@/constants";
 import type {
   ApproveReviewRequest,
   ApproveReviewResponse,
+  DatabaseReviewsResponse,
   FetchReviewsResponse,
   GenerateAiRequest,
   GenerateAiResponse
@@ -17,13 +18,17 @@ import type { Review, SuggestionTone } from "@/types/review";
 export function DashboardPage() {
   const [placeId, setPlaceId] = useState("");
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [databaseReviews, setDatabaseReviews] = useState<Review[]>([]);
   const [isFetching, setIsFetching] = useState(false);
+  const [isLoadingDatabaseReviews, setIsLoadingDatabaseReviews] = useState(false);
   const [fetchError, setFetchError] = useState("");
+  const [databaseError, setDatabaseError] = useState("");
   const [generatingReviewId, setGeneratingReviewId] = useState<string | null>(null);
   const [selectedTones, setSelectedTones] = useState<Record<string, SuggestionTone>>({});
   const [successMessage, setSuccessMessage] = useState("");
 
   const hasReviews = reviews.length > 0;
+  const hasDatabaseReviews = databaseReviews.length > 0;
 
   const sortedReviews = useMemo(
     () =>
@@ -36,6 +41,54 @@ export function DashboardPage() {
       }),
     [reviews]
   );
+
+  const sortedDatabaseReviews = useMemo(
+    () =>
+      [...databaseReviews].sort((a, b) => {
+        if (a.status !== b.status) {
+          return a.status === "Pending" ? -1 : 1;
+        }
+
+        return new Date(b.reviewDate).getTime() - new Date(a.reviewDate).getTime();
+      }),
+    [databaseReviews]
+  );
+
+  const loadDatabaseReviews = useCallback(async () => {
+    setDatabaseError("");
+    setIsLoadingDatabaseReviews(true);
+
+    try {
+      const response = await fetch("/api/reviews", {
+        method: "GET",
+        headers: { "Content-Type": "application/json" }
+      });
+      const payload = (await response.json()) as DatabaseReviewsResponse;
+
+      if (!response.ok || !payload.success) {
+        throw new Error(payload.success ? "Unable to load database reviews." : payload.error);
+      }
+
+      setDatabaseReviews(payload.data.reviews);
+    } catch (error) {
+      setDatabaseError(error instanceof Error ? error.message : "Unable to load database reviews.");
+    } finally {
+      setIsLoadingDatabaseReviews(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadDatabaseReviews();
+  }, [loadDatabaseReviews]);
+
+  const updateReviewInLists = (reviewId: string, updateReview: (review: Review) => Review) => {
+    setReviews((currentReviews) =>
+      currentReviews.map((review) => (review.id === reviewId ? updateReview(review) : review))
+    );
+    setDatabaseReviews((currentReviews) =>
+      currentReviews.map((review) => (review.id === reviewId ? updateReview(review) : review))
+    );
+  };
 
   const handleFetchReviews = async () => {
     setFetchError("");
@@ -63,6 +116,7 @@ export function DashboardPage() {
 
       setReviews(payload.data.reviews);
       setSelectedTones({});
+      await loadDatabaseReviews();
     } catch (error) {
       setReviews([]);
       setFetchError(error instanceof Error ? error.message : "Unable to fetch reviews.");
@@ -72,7 +126,7 @@ export function DashboardPage() {
   };
 
   const handleGenerateAi = async (reviewId: string) => {
-    const review = reviews.find((item) => item.id === reviewId);
+    const review = reviews.find((item) => item.id === reviewId) ?? databaseReviews.find((item) => item.id === reviewId);
 
     if (!review || review.status === "Resolved") {
       return;
@@ -94,11 +148,7 @@ export function DashboardPage() {
         throw new Error(payload.success ? "Unable to generate AI suggestions." : payload.error);
       }
 
-      setReviews((currentReviews) =>
-        currentReviews.map((item) =>
-          item.id === reviewId ? { ...item, aiSuggestions: payload.data.suggestions } : item
-        )
-      );
+      updateReviewInLists(reviewId, (item) => ({ ...item, aiSuggestions: payload.data.suggestions }));
     } catch (error) {
       setFetchError(error instanceof Error ? error.message : "Unable to generate AI suggestions.");
     } finally {
@@ -112,7 +162,7 @@ export function DashboardPage() {
 
   const handleApprove = async (reviewId: string) => {
     const selectedTone = selectedTones[reviewId];
-    const review = reviews.find((item) => item.id === reviewId);
+    const review = reviews.find((item) => item.id === reviewId) ?? databaseReviews.find((item) => item.id === reviewId);
 
     if (!selectedTone || !review?.aiSuggestions) {
       return;
@@ -133,18 +183,13 @@ export function DashboardPage() {
         throw new Error(payload.success ? "Unable to approve reply." : payload.error);
       }
 
-      setReviews((currentReviews) =>
-        currentReviews.map((item) =>
-          item.id === reviewId
-            ? {
-                ...item,
-                status: payload.data.status,
-                selectedReply: payload.data.selectedReply
-              }
-            : item
-        )
-      );
+      updateReviewInLists(reviewId, (item) => ({
+        ...item,
+        status: payload.data.status,
+        selectedReply: payload.data.selectedReply
+      }));
       setSuccessMessage("Reply approved and review moved to Resolved.");
+      await loadDatabaseReviews();
     } catch (error) {
       setFetchError(error instanceof Error ? error.message : "Unable to approve reply.");
     }
@@ -175,7 +220,7 @@ export function DashboardPage() {
           onSubmit={handleFetchReviews}
         />
 
-        <StatsCards reviews={reviews} />
+        <StatsCards reviews={databaseReviews} />
 
         {successMessage ? (
           <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
@@ -197,6 +242,46 @@ export function DashboardPage() {
           ) : (
             <div className="space-y-4">
               {sortedReviews.map((review) => (
+                <ReviewCard
+                  key={review.id}
+                  review={review}
+                  isGenerating={generatingReviewId === review.id}
+                  selectedTone={selectedTones[review.id]}
+                  onGenerate={handleGenerateAi}
+                  onSelectSuggestion={handleSelectSuggestion}
+                  onApprove={handleApprove}
+                />
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-slate-950">Database Reviews</h2>
+            {hasDatabaseReviews ? (
+              <p className="text-sm text-slate-500">{databaseReviews.length} reviews in database</p>
+            ) : null}
+          </div>
+
+          {databaseError ? (
+            <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+              {databaseError}
+            </div>
+          ) : null}
+
+          {isLoadingDatabaseReviews ? (
+            <div className="rounded-lg border border-slate-200 bg-white p-6 text-sm font-medium text-slate-600">
+              Loading database reviews...
+            </div>
+          ) : !hasDatabaseReviews ? (
+            <div className="rounded-lg border border-dashed border-slate-300 bg-white p-10 text-center">
+              <p className="text-base font-semibold text-slate-900">No database reviews yet</p>
+              <p className="mt-2 text-sm text-slate-500">Fetch a Google Place ID to save reviews into Supabase.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {sortedDatabaseReviews.map((review) => (
                 <ReviewCard
                   key={review.id}
                   review={review}

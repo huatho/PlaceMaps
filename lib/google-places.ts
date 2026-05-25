@@ -61,9 +61,16 @@ function getReviewDate(review: GooglePlaceReview) {
   return review.publishTime ?? new Date().toISOString();
 }
 
-function mapGoogleReviewToReview(review: GooglePlaceReview, index: number): Review {
+function mapGoogleReviewToReview(
+  review: GooglePlaceReview,
+  index: number,
+  place: { placeId: string; displayName: string; formattedAddress: string }
+): Review {
   return {
     id: review.name ?? `google-review-${index + 1}`,
+    placeId: place.placeId,
+    placeName: place.displayName,
+    placeAddress: place.formattedAddress,
     authorName: review.authorAttribution?.displayName ?? "Google user",
     rating: review.rating ?? 0,
     content: getReviewContent(review),
@@ -88,16 +95,21 @@ export async function fetchGooglePlaceDetails(placeId: string): Promise<GooglePl
   }
 
   const place = (await response.json()) as GooglePlaceDetailsResponse;
+  const placeDetails = {
+    placeId: place.id ?? placeId,
+    displayName: place.displayName?.text ?? "",
+    formattedAddress: place.formattedAddress ?? ""
+  };
   const reviews = (place.reviews ?? [])
     .filter((review) => getReviewContent(review).trim().length > 0)
-    .map(mapGoogleReviewToReview)
+    .map((review, index) => mapGoogleReviewToReview(review, index, placeDetails))
     .sort((a, b) => new Date(b.reviewDate).getTime() - new Date(a.reviewDate).getTime())
     .slice(0, 5);
 
   return {
-    placeId: place.id ?? placeId,
-    displayName: place.displayName?.text ?? "",
-    formattedAddress: place.formattedAddress ?? "",
+    placeId: placeDetails.placeId,
+    displayName: placeDetails.displayName,
+    formattedAddress: placeDetails.formattedAddress,
     reviews
   };
 }

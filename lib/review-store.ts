@@ -17,6 +17,7 @@ interface ReviewRow {
   rating: number | null;
   review_date: string | null;
   status: ReviewStatus | string | null;
+  places?: Pick<PlaceRow, "display_name" | "formatted_address"> | Pick<PlaceRow, "display_name" | "formatted_address">[] | null;
 }
 
 interface ReplyRow {
@@ -27,8 +28,13 @@ interface ReplyRow {
 }
 
 function mapReviewRowToReview(review: ReviewRow, selectedReply?: string): Review {
+  const place = Array.isArray(review.places) ? review.places[0] : review.places;
+
   return {
     id: String(review.id),
+    placeId: review.place_id,
+    placeName: place?.display_name ?? undefined,
+    placeAddress: place?.formatted_address ?? undefined,
     authorName: review.author_name ?? "Google user",
     rating: review.rating ?? 0,
     content: review.content ?? "",
@@ -36,6 +42,12 @@ function mapReviewRowToReview(review: ReviewRow, selectedReply?: string): Review
     status: review.status === "Resolved" ? "Resolved" : "Pending",
     selectedReply
   };
+}
+
+async function mapReviewRowsWithReplies(reviewRows: ReviewRow[]) {
+  const repliesByReviewId = await getRepliesByReviewId(reviewRows.map((review) => review.id));
+
+  return reviewRows.map((review) => mapReviewRowToReview(review, repliesByReviewId.get(review.id)));
 }
 
 async function getRepliesByReviewId(reviewIds: number[]) {
@@ -65,6 +77,20 @@ async function getRepliesByReviewId(reviewIds: number[]) {
   return repliesByReviewId;
 }
 
+export async function getAllReviewsFromDatabase(): Promise<Review[]> {
+  const supabase = createServerSupabaseClient();
+  const { data: reviews, error } = await supabase
+    .from("reviews")
+    .select("id, place_id, content, author_name, rating, review_date, status, places(display_name, formatted_address)")
+    .order("review_date", { ascending: false });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return mapReviewRowsWithReplies((reviews ?? []) as unknown as ReviewRow[]);
+}
+
 export async function getPlaceReviewsFromDatabase(placeId: string): Promise<Review[] | null> {
   const supabase = createServerSupabaseClient();
   const { data: place, error: placeError } = await supabase
@@ -83,7 +109,7 @@ export async function getPlaceReviewsFromDatabase(placeId: string): Promise<Revi
 
   const { data: reviews, error: reviewsError } = await supabase
     .from("reviews")
-    .select("id, place_id, content, author_name, rating, review_date, status")
+    .select("id, place_id, content, author_name, rating, review_date, status, places(display_name, formatted_address)")
     .eq("place_id", (place as PlaceRow).place_id)
     .order("review_date", { ascending: false });
 
@@ -91,10 +117,7 @@ export async function getPlaceReviewsFromDatabase(placeId: string): Promise<Revi
     throw new Error(reviewsError.message);
   }
 
-  const reviewRows = (reviews ?? []) as ReviewRow[];
-  const repliesByReviewId = await getRepliesByReviewId(reviewRows.map((review) => review.id));
-
-  return reviewRows.map((review) => mapReviewRowToReview(review, repliesByReviewId.get(review.id)));
+  return mapReviewRowsWithReplies((reviews ?? []) as unknown as ReviewRow[]);
 }
 
 export async function saveFetchedPlaceReviews(place: GooglePlaceDetails): Promise<Review[]> {
@@ -128,14 +151,14 @@ export async function saveFetchedPlaceReviews(place: GooglePlaceDetails): Promis
         status: "Pending" satisfies ReviewStatus
       }))
     )
-    .select("id, place_id, content, author_name, rating, review_date, status")
+    .select("id, place_id, content, author_name, rating, review_date, status, places(display_name, formatted_address)")
     .order("review_date", { ascending: false });
 
   if (reviewsError) {
     throw new Error(reviewsError.message);
   }
 
-  return ((insertedReviews ?? []) as ReviewRow[]).map((review) => mapReviewRowToReview(review));
+  return ((insertedReviews ?? []) as unknown as ReviewRow[]).map((review) => mapReviewRowToReview(review));
 }
 
 export async function approveReviewReply(reviewId: string, selectedReply: string): Promise<void> {

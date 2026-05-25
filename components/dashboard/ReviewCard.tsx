@@ -31,6 +31,16 @@ export function ReviewCard({
     <Card as="article" className="p-5">
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div>
+          {review.placeName || review.placeAddress ? (
+            <div className="mb-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
+              {review.placeName ? (
+                <p className="text-sm font-semibold leading-5 text-slate-950">{review.placeName}</p>
+              ) : null}
+              {review.placeAddress ? (
+                <p className="mt-0.5 text-xs leading-5 text-slate-500">{review.placeAddress}</p>
+              ) : null}
+            </div>
+          ) : null}
           <div className="flex flex-wrap items-center gap-3">
             <h2 className="text-base font-semibold text-slate-950">{review.authorName}</h2>
             <StatusBadge status={review.status} />

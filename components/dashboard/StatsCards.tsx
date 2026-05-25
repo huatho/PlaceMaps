@@ -9,7 +9,7 @@ export function StatsCards({ reviews }: StatsCardsProps) {
   const stats = [
     { label: "Total Reviews", value: reviews.length },
     { label: "Pending", value: reviews.filter((review) => review.status === "Pending").length },
-    { label: "Resolved", value: reviews.filter((review) => review.status === "Resolved").length }
+    { label: "Approved", value: reviews.filter((review) => review.status === "Resolved").length }
   ];
 
   return (

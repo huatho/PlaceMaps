@@ -10,6 +10,9 @@ export interface AiSuggestions {
 
 export interface Review {
   id: string;
+  placeId?: string;
+  placeName?: string;
+  placeAddress?: string;
   authorName: string;
   rating: number;
   content: string;

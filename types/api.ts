@@ -20,6 +20,10 @@ export type FetchReviewsResponse = ApiResponse<{
   reviews: Review[];
 }>;
 
+export type DatabaseReviewsResponse = ApiResponse<{
+  reviews: Review[];
+}>;
+
 export interface GenerateAiRequest {
   review: Review;
 }
